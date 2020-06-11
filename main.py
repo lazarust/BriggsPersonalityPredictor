@@ -1,10 +1,8 @@
 import pandas as pd
 import tensorflow as tf
-import keras as k
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
-from keras import losses
 
 
 df = pd.read_csv('data.csv',  delimiter=',')
@@ -40,14 +38,22 @@ training_lab_seq = tokenizer2.texts_to_sequences(training_labels)
 testing_seq = tokenizer1.texts_to_sequences(testing_sentences)
 testing_pad = pad_sequences(testing_seq, padding=pad, maxlen=max_length, truncating=pad)
 testing_label_seq = tokenizer2.texts_to_sequences(testing_labels)
+training_lab = []
+for x in training_lab_seq:
+    training_lab.append(x[0])
+
+testing_lab = []
+for x  in testing_label_seq:
+    testing_lab.append(x[0])
 
 model = tf.keras.Sequential()
-model.add(tf.keras.layers.Embedding(3000, 16, input_length=max_length))
-model.add(tf.keras.layers.Flatten())
-model.add(tf.keras.layers.Dense(17, activation='relu'))
-model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+model.add(tf.keras.layers.Embedding(3000, 64, input_length=max_length))
+model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64)))
+for units in [64, 64]:
+  model.add(tf.keras.layers.Dense(units, activation='relu'))
+model.add(tf.keras.layers.Dense(18, activation='softmax'))
 model.summary()
-model.compile(metrics=['accuracy'], loss='mean_absolute_error')
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy',  metrics=['accuracy'])
 num_epochs = 30
 
-history = model.fit(np.array(training_pad), np.array(training_lab_seq), epochs=num_epochs, validation_data=(np.array(testing_pad), np.array(testing_label_seq)), verbose=2)
+history = model.fit(np.array(training_pad), np.array(training_lab), epochs=num_epochs, validation_data=(np.array(testing_pad), np.array(testing_lab)), verbose=2)
